@@ -1,8 +1,8 @@
 name: Delete dev documentation
 
-on:
-  pull_request:
-    types: [ closed ]
+# on:
+#   pull_request:
+#     types: [ closed ]
 
 
 jobs:
