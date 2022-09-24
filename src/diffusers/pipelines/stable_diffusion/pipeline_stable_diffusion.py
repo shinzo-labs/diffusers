@@ -122,6 +122,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
         allow_nsfw: bool = False,
         **kwargs,
     ):
+        warnings.warn(f"pipeline_stable_diffusion allow_nsfw={allow_nsfw}")
         r"""
         Function invoked when calling the pipeline for generation.
 

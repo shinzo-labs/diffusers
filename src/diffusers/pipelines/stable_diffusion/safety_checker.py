@@ -33,6 +33,7 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
 
     @torch.no_grad()
     def forward(self, clip_input, images, allow_nsfw=False):
+        logger.warning(f"forward allow_nsfw={allow_nsfw}")
         pooled_output = self.vision_model(clip_input)[1]  # pooled_output
         image_embeds = self.visual_projection(pooled_output)
 
@@ -67,21 +68,20 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
 
         has_nsfw_concepts = [len(res["bad_concepts"]) > 0 for res in result]
 
-        if (not allow_nsfw):
-          for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):
-              if has_nsfw_concept:
-                  images[idx] = np.zeros(images[idx].shape)  # black image
-
         if any(has_nsfw_concepts):
-          if (allow_nsfw):
-            logger.warning(
-              "Potential NSFW content was detected in one or more images, but the image will be returned due to NSFW settings."
-            )
-          else:
-            logger.warning(
-              "Potential NSFW content was detected in one or more images. A black image will be returned instead."
-              " Try again with a different prompt and/or seed."
-            )
+            if (allow_nsfw):
+                logger.warning(
+                    "Potential NSFW content was detected in one or more images, but the image will be returned due to NSFW settings."
+                )
+            else:
+                for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):
+                    if has_nsfw_concept:
+                        images[idx] = np.zeros(images[idx].shape)  # black image
+
+                logger.warning(
+                    "Potential NSFW content was detected in one or more images. A black image will be returned instead."
+                    " Try again with a different prompt and/or seed."
+                )
 
         return images, has_nsfw_concepts
 
@@ -108,6 +108,6 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
         has_nsfw_concepts = torch.any(concept_scores > 0, dim=1)
 
         if (not allow_nsfw):
-          images[has_nsfw_concepts] = 0.0  # black image
+            images[has_nsfw_concepts] = 0.0  # black image
 
         return images, has_nsfw_concepts
