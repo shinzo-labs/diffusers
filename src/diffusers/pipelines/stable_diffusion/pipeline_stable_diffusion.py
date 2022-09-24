@@ -119,6 +119,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
         latents: Optional[torch.FloatTensor] = None,
         output_type: Optional[str] = "pil",
         return_dict: bool = True,
+        allow_nsfw: bool = False,
         **kwargs,
     ):
         r"""
@@ -156,6 +157,8 @@ class StableDiffusionPipeline(DiffusionPipeline):
             return_dict (`bool`, *optional*, defaults to `True`):
                 Whether or not to return a [`~pipelines.stable_diffusion.StableDiffusionPipelineOutput`] instead of a
                 plain tuple.
+            allow_nsfw (`bool`, *optional*, defaults to `False`):
+                Whether NSFW images should be allowed to return, or be blacked out instead.
 
         Returns:
             [`~pipelines.stable_diffusion.StableDiffusionPipelineOutput`] or `tuple`:
@@ -279,7 +282,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
 
         # run safety checker
         safety_checker_input = self.feature_extractor(self.numpy_to_pil(image), return_tensors="pt").to(self.device)
-        image, has_nsfw_concept = self.safety_checker(images=image, clip_input=safety_checker_input.pixel_values)
+        image, has_nsfw_concept = self.safety_checker(images=image, clip_input=safety_checker_input.pixel_values, allow_nsfw=allow_nsfw)
 
         if output_type == "pil":
             image = self.numpy_to_pil(image)

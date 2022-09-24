@@ -53,6 +53,7 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         latents: Optional[np.ndarray] = None,
         output_type: Optional[str] = "pil",
         return_dict: bool = True,
+        allow_nsfw: bool = False,
         **kwargs,
     ):
         if isinstance(prompt, str):
@@ -149,7 +150,7 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
 
         # run safety checker
         safety_checker_input = self.feature_extractor(self.numpy_to_pil(image), return_tensors="np")
-        image, has_nsfw_concept = self.safety_checker(clip_input=safety_checker_input.pixel_values, images=image)
+        image, has_nsfw_concept = self.safety_checker(clip_input=safety_checker_input.pixel_values, images=image, allow_nsfw=allow_nsfw)
 
         if output_type == "pil":
             image = self.numpy_to_pil(image)
