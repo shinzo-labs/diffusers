@@ -32,7 +32,7 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
         self.register_buffer("special_care_embeds_weights", torch.ones(3))
 
     @torch.no_grad()
-    def forward(self, clip_input, images):
+    def forward(self, clip_input, images, allow_nsfw=False):
         pooled_output = self.vision_model(clip_input)[1]  # pooled_output
         image_embeds = self.visual_projection(pooled_output)
 
@@ -67,20 +67,25 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
 
         has_nsfw_concepts = [len(res["bad_concepts"]) > 0 for res in result]
 
-        for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):
-            if has_nsfw_concept:
-                images[idx] = np.zeros(images[idx].shape)  # black image
-
         if any(has_nsfw_concepts):
-            logger.warning(
-                "Potential NSFW content was detected in one or more images. A black image will be returned instead."
-                " Try again with a different prompt and/or seed."
-            )
+            if (allow_nsfw):
+                logger.warning(
+                    "Potential NSFW content was detected in one or more images, but the image will be returned due to NSFW settings."
+                )
+            else:
+                for idx, has_nsfw_concept in enumerate(has_nsfw_concepts):
+                    if has_nsfw_concept:
+                        images[idx] = np.zeros(images[idx].shape)  # black image
+
+                logger.warning(
+                    "Potential NSFW content was detected in one or more images. A black image will be returned instead."
+                    " Try again with a different prompt and/or seed."
+                )
 
         return images, has_nsfw_concepts
 
     @torch.inference_mode()
-    def forward_onnx(self, clip_input: torch.FloatTensor, images: torch.FloatTensor):
+    def forward_onnx(self, clip_input: torch.FloatTensor, images: torch.FloatTensor, allow_nsfw=False):
         pooled_output = self.vision_model(clip_input)[1]  # pooled_output
         image_embeds = self.visual_projection(pooled_output)
 
@@ -101,6 +106,7 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
         # concept_scores = concept_scores.round(decimals=3)
         has_nsfw_concepts = torch.any(concept_scores > 0, dim=1)
 
-        images[has_nsfw_concepts] = 0.0  # black image
+        if (not allow_nsfw):
+            images[has_nsfw_concepts] = 0.0  # black image
 
         return images, has_nsfw_concepts
