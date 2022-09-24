@@ -33,7 +33,6 @@ class StableDiffusionSafetyChecker(PreTrainedModel):
 
     @torch.no_grad()
     def forward(self, clip_input, images, allow_nsfw=False):
-        logger.warning(f"forward allow_nsfw={allow_nsfw}")
         pooled_output = self.vision_model(clip_input)[1]  # pooled_output
         image_embeds = self.visual_projection(pooled_output)
 
